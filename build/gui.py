@@ -12,7 +12,7 @@ import time
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, StringVar
 from tkinter import ttk
-import matplotlib
+import matplotlib.pyplot
 from matplotlib.figure import Figure
 matplotlib.use('TkAgg')
 import tkintermapview
@@ -21,7 +21,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r"/Users/angeloromano/Documents/ICARUS/AirTelemGUI0.1/Tkinter-Designer-master/build/assets/frame0")
 
-
+matplotlib.pyplot.style.use('dark_background')
+matplotlib.rcParams['grid.color'] = 'grey'
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
 
@@ -143,7 +144,7 @@ def update_ip():
         
         if Refresh_Events > 1:
             Altitude_Plot.cla()
-            Altitude_Plot.plot(*zip(*Altitude_List))
+            Altitude_Plot.plot(*zip(*Altitude_List),color='darkorange')
             Altitude_Plot.grid(visible=True)
         plot1.draw()
 
@@ -169,7 +170,7 @@ def update_ip():
 
         if Refresh_Events > 1:
             Current_Plot.cla()
-            Current_Plot.plot(*zip(*Current_List))
+            Current_Plot.plot(*zip(*Current_List),color='darkorange')
             Current_Plot.grid(visible=True)
             plot2.draw()
               
@@ -521,7 +522,7 @@ Temperature = canvas.create_text(
 #    outline="")
 
 # the figure that will contain the plot
-ALT_Plot = Figure(figsize = (3.85, 2.6), dpi = 100)  
+ALT_Plot = Figure(figsize = (4.2, 2.6), dpi = 100)  
 #ALT_Plot.add_gridspec(1,1)
 ALT_Plot.suptitle('Altitude AGL (m)')
 # list of squares
@@ -543,7 +544,7 @@ plot1.get_tk_widget().place(x=454,y=545)
 #    outline="")
 
 # the figure that will contain the plot
-CUR_Plot = Figure(figsize = (3.85, 2.6), dpi = 100)  
+CUR_Plot = Figure(figsize = (4.2, 2.6), dpi = 100)  
 CUR_Plot.add_gridspec(10,10)
 CUR_Plot.suptitle('Current (A)')
 # list of squares
@@ -568,21 +569,21 @@ map.set_zoom(15)
 #    fill="#D5D5D5",
 #    outline="")
 
-Alt_Button = Button(window, text ="Reset Altitude", command = Reset_Altitude)
+Alt_Button = Button(window, text ="Reset Altitude", command = Reset_Altitude,bg='grey')
 Alt_Button.place(x=100,y=600)
 
-AltCalib_Button = Button(window, fg = "black", text ="Altimeter Calibration", command = Barometer_Calibration)
+AltCalib_Button = Button(window, fg = "black", text ="Altimeter Calibration", command = Barometer_Calibration,bg='grey')
 AltCalib_Button.place(x=215,y=600)
 
 n = StringVar()
-Devlist = ttk.Combobox(window, textvariable=n)
+Devlist = ttk.Combobox(window, textvariable=n,background='grey')
 Devlist.place(x=90,y=10)
 
 Serial_Ports = get_SerialPorts()
 for i in range(len(Serial_Ports)):
     Devlist['values'] = Serial_Ports[i].device
 
-Connect_Button = Button(window, fg = "black", text ="Connect", command = Init_Serial)
+Connect_Button = Button(window, fg = "black", text ="Connect", command = Init_Serial,bg='grey')
 Connect_Button.place(x=240,y=8)
 
 window.resizable(False, False)
