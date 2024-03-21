@@ -65,6 +65,7 @@ def Barometer_Calibration():
     Baro_P0 = Baro_Pressure/(math.exp((-Field_Altitude/Baro_Alpha)))
     AltCalib_Button['state'] = 'disabled'
     
+    
 
 def update_ip():
     global GPSTrace_Lenght
@@ -492,7 +493,7 @@ plot2 = canvas.create_rectangle(
     outline="")
 
 map = tkintermapview.TkinterMapView(window,width=795,height=480,corner_radius=10)
-map.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=24)  # google satellite
+map.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=20)  # google satellite
 map.place(x=454,y=34)
 map.set_zoom(15)
 
@@ -522,5 +523,7 @@ Connect_Button = Button(window, fg = "black", text ="Connect", command = Init_Se
 Connect_Button.place(x=240,y=8)
 
 window.resizable(False, False)
+window.title('Air Telemetry Visualizer V0.5')
+window.iconbitmap("Plane.ico")
 
 window.mainloop()
