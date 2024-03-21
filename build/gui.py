@@ -23,6 +23,7 @@ def relative_to_assets(path: str) -> Path:
 #Begin user defined variables
 Baro_Alpha = 8006.0         #Parameter from standard atmosphere model
 Field_Altitude = 240.0      #Altitude of the airfield used for barometer calibration
+GPSTrace_Lenght = 50        #GPS trace lenght in samples
 #End user defined variables
 
 #System Variables
@@ -66,6 +67,7 @@ def Barometer_Calibration():
     
 
 def update_ip():
+    global GPSTrace_Lenght
     global Refresh_Events
     global AltBaro_Offset
     global AltGPS_Offset
@@ -93,12 +95,12 @@ def update_ip():
 
     if(is_float(Data_list[1]) and (is_float(Data_list[2]))):
 
-        if Refresh_Events % 50 == 0:
+        if Refresh_Events % GPSTrace_Lenght == 0:
             Position_Index = 0
 
         if Refresh_Events <= 1:
             Position_List[Refresh_Events] = (float(Data_list[1]),float(Data_list[2]))
-        elif Refresh_Events < 50:
+        elif Refresh_Events < GPSTrace_Lenght:
             Position_List.append((float(Data_list[1]),float(Data_list[2])))
         else:
             Position_List[Position_Index] = (float(Data_list[1]),float(Data_list[2]))
@@ -111,7 +113,6 @@ def update_ip():
             path.set_position_list(Position_List)
         
         Position_Index = Position_Index + 1
-        map.set_zoom(15)
 
 
     if(is_float(Data_list[7])):
@@ -493,6 +494,7 @@ plot2 = canvas.create_rectangle(
 map = tkintermapview.TkinterMapView(window,width=795,height=480,corner_radius=10)
 map.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=24)  # google satellite
 map.place(x=454,y=34)
+map.set_zoom(15)
 
 #map = canvas.create_rectangle(
 #    454.0,
