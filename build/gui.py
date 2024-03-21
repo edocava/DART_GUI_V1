@@ -28,7 +28,7 @@ def relative_to_assets(path: str) -> Path:
 #Begin user defined variables
 Baro_Alpha = 8006.0         #Parameter from standard atmosphere model
 Field_Altitude = 240.0      #Altitude of the airfield used for barometer calibration
-GPSTrace_Lenght = 50        #GPS trace lenght in samples
+GPSTrace_Lenght = 70        #GPS trace lenght in samples
 #End user defined variables
 
 #System Variables
@@ -75,6 +75,7 @@ def Barometer_Calibration():
 
 
 def update_ip():
+    start = time.time()
     global GPSTrace_Lenght
     global Refresh_Events
     global AltBaro_Offset
@@ -86,9 +87,8 @@ def update_ip():
     global Baro_Pressure
     global path
     global Position_Index
-
     Data_list = ["00"] * 18
-    start = time.time()
+    
     Data_list_temp = ReadData()
     
     if len(Data_list_temp) > 15 :
