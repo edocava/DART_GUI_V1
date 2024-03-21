@@ -4,14 +4,16 @@
 
 import math
 from pathlib import Path
-import matplotlib
 from Telem import *
 import serial
+from collections import *
 # from tkinter import *
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, StringVar
 from tkinter import ttk
+from matplotlib.figure import Figure
 import tkintermapview
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r"/Users/angeloromano/Documents/ICARUS/AirTelemGUI0.1/Tkinter-Designer-master/build/assets/frame0")
@@ -36,7 +38,9 @@ Baro_P0 = 5.0
 Baro_Pressure = 0.0
 Position_Index = 0
 Refresh_Events = 0
-Position_List = [0.0,0.0]
+Position_List = deque([0.0,0.0])
+Current_List = deque([0.0,0.0])
+Altitude_List = deque([0.0,0.0])
 
 
 window = Tk()
@@ -65,7 +69,7 @@ def Barometer_Calibration():
     Baro_P0 = Baro_Pressure/(math.exp((-Field_Altitude/Baro_Alpha)))
     AltCalib_Button['state'] = 'disabled'
     
-    
+
 
 def update_ip():
     global GPSTrace_Lenght
@@ -96,25 +100,20 @@ def update_ip():
 
     if(is_float(Data_list[1]) and (is_float(Data_list[2]))):
 
-        if Refresh_Events % GPSTrace_Lenght == 0:
-            Position_Index = 0
-
         if Refresh_Events <= 1:
             Position_List[Refresh_Events] = (float(Data_list[1]),float(Data_list[2]))
         elif Refresh_Events < GPSTrace_Lenght:
             Position_List.append((float(Data_list[1]),float(Data_list[2])))
         else:
-            Position_List[Position_Index] = (float(Data_list[1]),float(Data_list[2]))
-
+            Position_List[0] = (float(Data_list[1]),float(Data_list[2]))
+            Position_List.rotate(-1)
+            
         map.set_position(float(Data_list[1]),float(Data_list[2]))
         
         if Refresh_Events == 1:
             path = map.set_path([Position_List[0],Position_List[1]])
         elif Refresh_Events > 1:
             path.set_position_list(Position_List)
-        
-        Position_Index = Position_Index + 1
-
 
     if(is_float(Data_list[7])):
         GPS_Alt = float(Data_list[7]) - AltGPS_Offset
@@ -130,6 +129,19 @@ def update_ip():
         Barometric_Altitude = round(Barometric_Altitude,2)
         canvas.itemconfigure(BaroAlt, text=str(Barometric_Altitude)+' m')
 
+        if Refresh_Events <= 1:
+            Altitude_List[Refresh_Events] = (Refresh_Events,Barometric_Altitude)
+        elif Refresh_Events < GPSTrace_Lenght:
+            Altitude_List.append((Refresh_Events,Barometric_Altitude))
+        else:
+            Altitude_List[0] = (Refresh_Events,Barometric_Altitude)
+            Altitude_List.rotate(-1)
+        
+        if Refresh_Events > 1:
+            Altitude_Plot.cla()
+            Altitude_Plot.plot(*zip(*Altitude_List))
+        plot1.draw()
+
     canvas.itemconfigure(Pitch, text=Data_list[10]+'°')
     canvas.itemconfigure(Roll, text=Data_list[11]+'°')
     canvas.itemconfigure(Yaw, text="0"+'°')
@@ -142,7 +154,23 @@ def update_ip():
         P = round(P,1)
         canvas.itemconfigure(Power, text=str(P)+' W')
 
-    
+        if Refresh_Events <= 1:
+            Current_List[Refresh_Events] = (Refresh_Events,float(Data_list[14]))
+        elif Refresh_Events < GPSTrace_Lenght:
+            Current_List.append((Refresh_Events,float(Data_list[14])))
+        else:
+            Current_List[0] = (Refresh_Events,float(Data_list[14]))
+            Current_List.rotate(-1)
+
+        if Refresh_Events > 1:
+            Current_Plot.cla()
+            Current_Plot.plot(*zip(*Current_List))
+            plot2.draw()
+              
+    Position_Index = Position_Index + 1
+
+    if Position_Index % GPSTrace_Lenght == 0:
+        Position_Index = 0
     window.after(100, update_ip)
     Refresh_Events += 1
 
@@ -476,21 +504,46 @@ Temperature = canvas.create_text(
     font=("Inter", 20 * -1)
 )
 
-plot1 = canvas.create_rectangle(
-    454.0,
-    545.0,
-    840.0,
-    783.0,
-    fill="#D5D5D5",
-    outline="")
+#plot1 = canvas.create_rectangle(
+#    454.0,
+#    545.0,
+#    840.0,
+#    783.0,
+#    fill="#D5D5D5",
+#    outline="")
 
-plot2 = canvas.create_rectangle(
-    863.0,
-    545.0,
-    1249.0,
-    783.0,
-    fill="#D5D5D5",
-    outline="")
+# the figure that will contain the plot
+ALT_Plot = Figure(figsize = (3.85, 2.6), dpi = 100)  
+ALT_Plot.add_gridspec(10,10)
+ALT_Plot.suptitle('Altitude AGL (m)')
+# list of squares
+y = [i**2 for i in range(101)]
+# adding the subplot
+Altitude_Plot = ALT_Plot.add_subplot()
+plot1 = FigureCanvasTkAgg(figure=ALT_Plot,master=window)
+plot1.draw()
+plot1.get_tk_widget().place(x=454,y=545)
+
+
+#plot2 = canvas.create_rectangle(
+#    863.0,
+#    545.0,
+#    1249.0,
+#    783.0,
+#    fill="#D5D5D5",
+#    outline="")
+
+# the figure that will contain the plot
+CUR_Plot = Figure(figsize = (3.85, 2.6), dpi = 100)  
+CUR_Plot.add_gridspec(10,10)
+CUR_Plot.suptitle('Current (A)')
+# list of squares
+y = [i**2 for i in range(101)]
+# adding the subplot
+Current_Plot = CUR_Plot.add_subplot()
+plot2 = FigureCanvasTkAgg(figure=CUR_Plot,master=window)
+plot2.draw()
+plot2.get_tk_widget().place(x=863,y=545)
 
 map = tkintermapview.TkinterMapView(window,width=795,height=480,corner_radius=10)
 map.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=20)  # google satellite
