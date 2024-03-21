@@ -16,7 +16,7 @@ def get_SerialPorts():
 
 def is_float(string):
     if string.count(".") == 1:
-        if string.replace(".", "").isnumeric():
+        if string.replace(".", "").replace("+", "").replace("-", "").isnumeric():
             return True
         else:
             return False

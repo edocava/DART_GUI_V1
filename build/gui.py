@@ -11,7 +11,7 @@ import serial
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, StringVar
 from tkinter import ttk
-
+import tkintermapview
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = OUTPUT_PATH / Path(r"/Users/angeloromano/Documents/ICARUS/AirTelemGUI0.1/Tkinter-Designer-master/build/assets/frame0")
@@ -21,19 +21,22 @@ def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH / Path(path)
 
 #Begin user defined variables
-#Casa Angelo 
-#Alt_Offset = 250
-#Pista Tetti Neirotti
+Baro_Alpha = 8006.0         #Parameter from standard atmosphere model
+Field_Altitude = 240.0      #Altitude of the airfield used for barometer calibration
+#End user defined variables
+
+#System Variables
 AltGPS_Offset = 0.0
 AltBaro_Offset = 0.0
-Field_Altitude = 240.0
 Ground_Pressure = 0.0
-Baro_Alpha = 8006       #Parameter from standard atmosphere model
 GPS_Alt = 0.0
 Barometric_Altitude = 0.0
 Baro_P0 = 5.0
 Baro_Pressure = 0.0
-#End user defined variables
+Position_Index = 0
+Refresh_Events = 0
+Position_List = [0.0,0.0]
+
 
 window = Tk()
 
@@ -63,6 +66,7 @@ def Barometer_Calibration():
     
 
 def update_ip():
+    global Refresh_Events
     global AltBaro_Offset
     global AltGPS_Offset
     global GPS_Alt
@@ -70,6 +74,8 @@ def update_ip():
     global Baro_P0
     global Field_Altitude
     global Baro_Pressure
+    global path
+    global Position_Index
 
     Data_list = ["00"] * 18
     Data_list_temp = ReadData()
@@ -84,6 +90,29 @@ def update_ip():
     canvas.itemconfigure(Groundspeed, text=Data_list[4]+' m/s')
     canvas.itemconfigure(Satellites, text=Data_list[5])
     canvas.itemconfigure(hdop, text=Data_list[6])
+
+    if(is_float(Data_list[1]) and (is_float(Data_list[2]))):
+
+        if Refresh_Events % 50 == 0:
+            Position_Index = 0
+
+        if Refresh_Events <= 1:
+            Position_List[Refresh_Events] = (float(Data_list[1]),float(Data_list[2]))
+        elif Refresh_Events < 50:
+            Position_List.append((float(Data_list[1]),float(Data_list[2])))
+        else:
+            Position_List[Position_Index] = (float(Data_list[1]),float(Data_list[2]))
+
+        map.set_position(float(Data_list[1]),float(Data_list[2]))
+        
+        if Refresh_Events == 1:
+            path = map.set_path([Position_List[0],Position_List[1]])
+        elif Refresh_Events > 1:
+            path.set_position_list(Position_List)
+        
+        Position_Index = Position_Index + 1
+        map.set_zoom(15)
+
 
     if(is_float(Data_list[7])):
         GPS_Alt = float(Data_list[7]) - AltGPS_Offset
@@ -113,6 +142,7 @@ def update_ip():
 
     
     window.after(100, update_ip)
+    Refresh_Events += 1
 
 window.geometry("1280x832")
 window.configure(bg = "#000000")
@@ -460,13 +490,17 @@ plot2 = canvas.create_rectangle(
     fill="#D5D5D5",
     outline="")
 
-map = canvas.create_rectangle(
-    454.0,
-    34.0,
-    1249.0,
-    514.0,
-    fill="#D5D5D5",
-    outline="")
+map = tkintermapview.TkinterMapView(window,width=795,height=480,corner_radius=10)
+map.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=24)  # google satellite
+map.place(x=454,y=34)
+
+#map = canvas.create_rectangle(
+#    454.0,
+#    34.0,
+#    1249.0,
+#    514.0,
+#    fill="#D5D5D5",
+#    outline="")
 
 Alt_Button = Button(window, text ="Reset Altitude", command = Reset_Altitude)
 Alt_Button.place(x=100,y=600)
