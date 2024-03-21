@@ -24,6 +24,7 @@ def is_float(string):
         return False
 
 def ReadData():
+    serialInst.flush()
     packet = serialInst.readline()
     while( "$"  not in str(packet) and len(str(packet))!=135):
         packet = serialInst.readline()

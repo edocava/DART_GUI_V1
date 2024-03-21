@@ -7,11 +7,14 @@ from pathlib import Path
 from Telem import *
 import serial
 from collections import *
+import time
 # from tkinter import *
 # Explicit imports to satisfy Flake8
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, StringVar
 from tkinter import ttk
+import matplotlib
 from matplotlib.figure import Figure
+matplotlib.use('TkAgg')
 import tkintermapview
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
@@ -85,8 +88,9 @@ def update_ip():
     global Position_Index
 
     Data_list = ["00"] * 18
+    start = time.time()
     Data_list_temp = ReadData()
-
+    
     if len(Data_list_temp) > 15 :
         Data_list = Data_list_temp
 
@@ -123,7 +127,7 @@ def update_ip():
     canvas.itemconfigure(Temperature, text=Data_list[8]+' °C')
     canvas.itemconfigure(Pressure, text=Data_list[9]+' mbar')
     
-    if(is_float(Data_list[9])):
+    if(is_float(Data_list[9]) and float(Data_list[9] != 0)):
         Baro_Pressure = float(Data_list[9])
         Barometric_Altitude = (- Baro_Alpha * math.log(float(Data_list[9])/Baro_P0)) - AltBaro_Offset
         Barometric_Altitude = round(Barometric_Altitude,2)
@@ -140,6 +144,7 @@ def update_ip():
         if Refresh_Events > 1:
             Altitude_Plot.cla()
             Altitude_Plot.plot(*zip(*Altitude_List))
+            Altitude_Plot.grid(visible=True)
         plot1.draw()
 
     canvas.itemconfigure(Pitch, text=Data_list[10]+'°')
@@ -165,14 +170,17 @@ def update_ip():
         if Refresh_Events > 1:
             Current_Plot.cla()
             Current_Plot.plot(*zip(*Current_List))
+            Current_Plot.grid(visible=True)
             plot2.draw()
               
     Position_Index = Position_Index + 1
 
     if Position_Index % GPSTrace_Lenght == 0:
         Position_Index = 0
-    window.after(100, update_ip)
+    window.after(1, update_ip)
     Refresh_Events += 1
+    stop = time.time()
+    print("%f",stop-start)
 
 window.geometry("1280x832")
 window.configure(bg = "#000000")
@@ -514,12 +522,13 @@ Temperature = canvas.create_text(
 
 # the figure that will contain the plot
 ALT_Plot = Figure(figsize = (3.85, 2.6), dpi = 100)  
-ALT_Plot.add_gridspec(10,10)
+#ALT_Plot.add_gridspec(1,1)
 ALT_Plot.suptitle('Altitude AGL (m)')
 # list of squares
 y = [i**2 for i in range(101)]
 # adding the subplot
 Altitude_Plot = ALT_Plot.add_subplot()
+Altitude_Plot.grid(visible=True)
 plot1 = FigureCanvasTkAgg(figure=ALT_Plot,master=window)
 plot1.draw()
 plot1.get_tk_widget().place(x=454,y=545)
@@ -541,6 +550,7 @@ CUR_Plot.suptitle('Current (A)')
 y = [i**2 for i in range(101)]
 # adding the subplot
 Current_Plot = CUR_Plot.add_subplot()
+Current_Plot.grid(visible=True)
 plot2 = FigureCanvasTkAgg(figure=CUR_Plot,master=window)
 plot2.draw()
 plot2.get_tk_widget().place(x=863,y=545)
