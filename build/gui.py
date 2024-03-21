@@ -30,6 +30,7 @@ def relative_to_assets(path: str) -> Path:
 Baro_Alpha = 8006.0         #Parameter from standard atmosphere model
 Field_Altitude = 240.0      #Altitude of the airfield used for barometer calibration
 GPSTrace_Lenght = 70        #GPS trace lenght in samples
+BGCOLOR = '#161618'
 #End user defined variables
 
 #System Variables
@@ -184,12 +185,12 @@ def update_ip():
     print("%f",stop-start)
 
 window.geometry("1280x832")
-window.configure(bg = "#000000")
+window.configure(bg = "#161618")
 
 
 canvas = Canvas(
     window,
-    bg = "#000000",
+    bg = BGCOLOR,
     height = 832,
     width = 1280,
     bd = 0,
@@ -523,13 +524,14 @@ Temperature = canvas.create_text(
 
 # the figure that will contain the plot
 ALT_Plot = Figure(figsize = (4.2, 2.6), dpi = 100)  
-#ALT_Plot.add_gridspec(1,1)
+ALT_Plot.set_facecolor(BGCOLOR)
 ALT_Plot.suptitle('Altitude AGL (m)')
 # list of squares
 y = [i**2 for i in range(101)]
 # adding the subplot
 Altitude_Plot = ALT_Plot.add_subplot()
 Altitude_Plot.grid(visible=True)
+Altitude_Plot.set_facecolor(BGCOLOR)
 plot1 = FigureCanvasTkAgg(figure=ALT_Plot,master=window)
 plot1.draw()
 plot1.get_tk_widget().place(x=454,y=545)
@@ -545,13 +547,14 @@ plot1.get_tk_widget().place(x=454,y=545)
 
 # the figure that will contain the plot
 CUR_Plot = Figure(figsize = (4.2, 2.6), dpi = 100)  
-CUR_Plot.add_gridspec(10,10)
+CUR_Plot.set_facecolor(BGCOLOR)
 CUR_Plot.suptitle('Current (A)')
 # list of squares
 y = [i**2 for i in range(101)]
 # adding the subplot
 Current_Plot = CUR_Plot.add_subplot()
 Current_Plot.grid(visible=True)
+Current_Plot.set_facecolor(BGCOLOR)
 plot2 = FigureCanvasTkAgg(figure=CUR_Plot,master=window)
 plot2.draw()
 plot2.get_tk_widget().place(x=863,y=545)
@@ -569,21 +572,21 @@ map.set_zoom(15)
 #    fill="#D5D5D5",
 #    outline="")
 
-Alt_Button = Button(window, text ="Reset Altitude", command = Reset_Altitude,bg='grey')
-Alt_Button.place(x=100,y=600)
+Alt_Button = Button(window, text ="Reset Altitude", command = Reset_Altitude,bg='grey',width= 8, height=1,highlightbackground=BGCOLOR)
+Alt_Button.place(x=80,y=600)
 
-AltCalib_Button = Button(window, fg = "black", text ="Altimeter Calibration", command = Barometer_Calibration,bg='grey')
+AltCalib_Button = Button(window, text ="Altimeter Calibration", command = Barometer_Calibration,bg='grey',width= 12, height=1,highlightbackground=BGCOLOR)
 AltCalib_Button.place(x=215,y=600)
 
 n = StringVar()
-Devlist = ttk.Combobox(window, textvariable=n,background='grey')
+Devlist = ttk.Combobox(window, textvariable=n,width= 13, height=1,state="readonly")
 Devlist.place(x=90,y=10)
 
 Serial_Ports = get_SerialPorts()
 for i in range(len(Serial_Ports)):
     Devlist['values'] = Serial_Ports[i].device
 
-Connect_Button = Button(window, fg = "black", text ="Connect", command = Init_Serial,bg='grey')
+Connect_Button = Button(window,text = "Connect", command = Init_Serial,bg='grey', width= 3, height=1,highlightbackground=BGCOLOR)
 Connect_Button.place(x=240,y=8)
 
 window.resizable(False, False)
