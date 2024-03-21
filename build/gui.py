@@ -9,7 +9,7 @@ from Telem import *
 import serial
 # from tkinter import *
 # Explicit imports to satisfy Flake8
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, StringVar
 from tkinter import ttk
 
 
@@ -35,12 +35,14 @@ Baro_P0 = 5.0
 Baro_Pressure = 0.0
 #End user defined variables
 
-Serial_Ports = get_SerialPorts()
-for i in len(Serial_Ports):
-    DevList = Serial_Ports[i].device
-
-
 window = Tk()
+
+def Init_Serial():
+    global n
+    Serial_Port = n.get()
+    Connect_Serial(Serial_Port)
+    window.after(100, update_ip)
+
 
 def Reset_Altitude():
     global AltBaro_Offset
@@ -467,16 +469,22 @@ map = canvas.create_rectangle(
     outline="")
 
 Alt_Button = Button(window, text ="Reset Altitude", command = Reset_Altitude)
-Alt_Button.place(x=50,y=600)
+Alt_Button.place(x=100,y=600)
 
 AltCalib_Button = Button(window, fg = "black", text ="Altimeter Calibration", command = Barometer_Calibration)
 AltCalib_Button.place(x=215,y=600)
 
-combobox = ttk.Combobox(window, textvariable=Serial_Ports)
-combobox.place(x=100,y=100)
+n = StringVar()
+Devlist = ttk.Combobox(window, textvariable=n)
+Devlist.place(x=90,y=10)
+
+Serial_Ports = get_SerialPorts()
+for i in range(len(Serial_Ports)):
+    Devlist['values'] = Serial_Ports[i].device
+
+Connect_Button = Button(window, fg = "black", text ="Connect", command = Init_Serial)
+Connect_Button.place(x=240,y=8)
 
 window.resizable(False, False)
-
-window.after(1000, update_ip)
 
 window.mainloop()

@@ -3,9 +3,13 @@ import math
 import serial.tools.list_ports
 
 serialInst = serial.Serial()
-serialInst.baudrate = 115200
-serialInst.port = "/dev/tty.usbmodem1203"
-serialInst.open()
+
+def Connect_Serial(Serial_Port):
+    serialInst.baudrate = 115200
+    serialInst.port = Serial_Port
+    serialInst.open()
+    
+
 
 def get_SerialPorts():
     return serial.tools.list_ports.comports()
