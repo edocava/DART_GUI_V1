@@ -28,7 +28,7 @@ def relative_to_assets(path: str) -> Path:
 
 #Begin user defined variables
 Baro_Alpha = 8006.0         #Parameter from standard atmosphere model
-Field_Altitude = 240.0      #Altitude of the airfield used for barometer calibration
+Field_Altitude = 307.0      #Altitude of the airfield used for barometer calibration
 GPSTrace_Lenght = 70        #GPS trace lenght in samples
 BGCOLOR = '#161618'
 #End user defined variables
@@ -73,8 +73,6 @@ def Barometer_Calibration():
     global Baro_Pressure
     Baro_P0 = Baro_Pressure/(math.exp((-Field_Altitude/Baro_Alpha)))
     AltCalib_Button['state'] = 'disabled'
-    
-
 
 def update_ip():
     start = time.time()
@@ -92,97 +90,101 @@ def update_ip():
     Data_list = ["00"] * 18
     
     Data_list_temp = ReadData()
-    
-    if len(Data_list_temp) > 15 :
-        Data_list = Data_list_temp
+    if len(Data_list_temp) == 19:
+        if Data_list_temp[18] == True:
+            if len(Data_list_temp) > 15 :
+                Data_list = Data_list_temp
 
-    canvas.itemconfigure(Orario, text=Data_list[0])
-    canvas.itemconfigure(Latitude, text=Data_list[1]+'°')
-    canvas.itemconfigure(Longitude, text=Data_list[2]+'°')
-    canvas.itemconfigure(Heading, text=Data_list[3]+'°')
-    canvas.itemconfigure(Groundspeed, text=Data_list[4]+' m/s')
-    canvas.itemconfigure(Satellites, text=Data_list[5])
-    canvas.itemconfigure(hdop, text=Data_list[6])
+            canvas.itemconfigure(Orario, text=Data_list[0])
+            canvas.itemconfigure(Latitude, text=Data_list[1]+'°')
+            canvas.itemconfigure(Longitude, text=Data_list[2]+'°')
+            canvas.itemconfigure(Heading, text=Data_list[3]+'°')
+            Speed = float(Data_list[4])/3.6
+            Speed = round(Speed,2)
+            canvas.itemconfigure(Groundspeed, text=str(Speed)+' m/s')
+            canvas.itemconfigure(Satellites, text=Data_list[5])
+            canvas.itemconfigure(hdop, text=Data_list[6])
 
-    if(is_float(Data_list[1]) and (is_float(Data_list[2]))):
+            if(is_float(Data_list[1]) and (is_float(Data_list[2]))):
 
-        if Refresh_Events <= 1:
-            Position_List[Refresh_Events] = (float(Data_list[1]),float(Data_list[2]))
-        elif Refresh_Events < GPSTrace_Lenght:
-            Position_List.append((float(Data_list[1]),float(Data_list[2])))
-        else:
-            Position_List[0] = (float(Data_list[1]),float(Data_list[2]))
-            Position_List.rotate(-1)
+                if Refresh_Events <= 1:
+                    Position_List[Refresh_Events] = (float(Data_list[1]),float(Data_list[2]))
+                elif Refresh_Events < GPSTrace_Lenght:
+                    Position_List.append((float(Data_list[1]),float(Data_list[2])))
+                else:
+                    Position_List[0] = (float(Data_list[1]),float(Data_list[2]))
+                    Position_List.rotate(-1)
+                    
+                map.set_position(float(Data_list[1]),float(Data_list[2]))
+                
+                if Refresh_Events == 1:
+                    path = map.set_path([Position_List[0],Position_List[1]])
+                elif Refresh_Events > 1:
+                    path.set_position_list(Position_List)
+
+            if(is_float(Data_list[7])):
+                GPS_Alt = float(Data_list[7]) - AltGPS_Offset
+                GPS_Alt = round(GPS_Alt,2)
+                canvas.itemconfigure(Altitude, text=str(GPS_Alt)+' m')
+
+            canvas.itemconfigure(Temperature, text=Data_list[8]+' °C')
+            canvas.itemconfigure(Pressure, text=Data_list[9]+' mbar')
             
-        map.set_position(float(Data_list[1]),float(Data_list[2]))
-        
-        if Refresh_Events == 1:
-            path = map.set_path([Position_List[0],Position_List[1]])
-        elif Refresh_Events > 1:
-            path.set_position_list(Position_List)
+            if(is_float(Data_list[9]) and float(Data_list[9] != 0)):
+                Baro_Pressure = float(Data_list[9])
+                Barometric_Altitude = (- Baro_Alpha * math.log(float(Data_list[9])/Baro_P0)) - AltBaro_Offset
+                Barometric_Altitude = round(Barometric_Altitude,2)
+                canvas.itemconfigure(BaroAlt, text=str(Barometric_Altitude)+' m')
 
-    if(is_float(Data_list[7])):
-        GPS_Alt = float(Data_list[7]) - AltGPS_Offset
-        GPS_Alt = round(GPS_Alt,2)
-        canvas.itemconfigure(Altitude, text=str(GPS_Alt)+' m')
+                if Refresh_Events <= 1:
+                    Altitude_List[Refresh_Events] = (Refresh_Events,Barometric_Altitude)
+                elif Refresh_Events < GPSTrace_Lenght:
+                    Altitude_List.append((Refresh_Events,Barometric_Altitude))
+                else:
+                    Altitude_List[0] = (Refresh_Events,Barometric_Altitude)
+                    Altitude_List.rotate(-1)
+                
+                if Refresh_Events > 1:
+                    Altitude_Plot.cla()
+                    Altitude_Plot.plot(*zip(*Altitude_List),color='darkorange')
+                    Altitude_Plot.grid(visible=True)
+                plot1.draw()
 
-    canvas.itemconfigure(Temperature, text=Data_list[8]+' °C')
-    canvas.itemconfigure(Pressure, text=Data_list[9]+' mbar')
-    
-    if(is_float(Data_list[9]) and float(Data_list[9] != 0)):
-        Baro_Pressure = float(Data_list[9])
-        Barometric_Altitude = (- Baro_Alpha * math.log(float(Data_list[9])/Baro_P0)) - AltBaro_Offset
-        Barometric_Altitude = round(Barometric_Altitude,2)
-        canvas.itemconfigure(BaroAlt, text=str(Barometric_Altitude)+' m')
+            canvas.itemconfigure(Pitch, text=Data_list[10]+'°')
+            canvas.itemconfigure(Roll, text=Data_list[11]+'°')
+            canvas.itemconfigure(Yaw, text="0"+'°')
 
-        if Refresh_Events <= 1:
-            Altitude_List[Refresh_Events] = (Refresh_Events,Barometric_Altitude)
-        elif Refresh_Events < GPSTrace_Lenght:
-            Altitude_List.append((Refresh_Events,Barometric_Altitude))
-        else:
-            Altitude_List[0] = (Refresh_Events,Barometric_Altitude)
-            Altitude_List.rotate(-1)
-        
-        if Refresh_Events > 1:
-            Altitude_Plot.cla()
-            Altitude_Plot.plot(*zip(*Altitude_List),color='darkorange')
-            Altitude_Plot.grid(visible=True)
-        plot1.draw()
+            canvas.itemconfigure(Voltage, text=Data_list[12]+' V')
+            canvas.itemconfigure(Current, text=Data_list[14]+' A')
+            
+            if(is_float(Data_list[12]) and is_float(Data_list[14])):
+                P = float(Data_list[12]) * float(Data_list[14])
+                P = round(P,1)
+                canvas.itemconfigure(Power, text=str(P)+' W')
 
-    canvas.itemconfigure(Pitch, text=Data_list[10]+'°')
-    canvas.itemconfigure(Roll, text=Data_list[11]+'°')
-    canvas.itemconfigure(Yaw, text="0"+'°')
+                if Refresh_Events <= 1:
+                    Current_List[Refresh_Events] = (Refresh_Events,float(Data_list[14]))
+                elif Refresh_Events < GPSTrace_Lenght:
+                    Current_List.append((Refresh_Events,float(Data_list[14])))
+                else:
+                    Current_List[0] = (Refresh_Events,float(Data_list[14]))
+                    Current_List.rotate(-1)
 
-    canvas.itemconfigure(Voltage, text=Data_list[12]+' V')
-    canvas.itemconfigure(Current, text=Data_list[14]+' A')
-    
-    if(is_float(Data_list[12]) and is_float(Data_list[14])):
-        P = float(Data_list[12]) * float(Data_list[14])
-        P = round(P,1)
-        canvas.itemconfigure(Power, text=str(P)+' W')
+                if Refresh_Events > 1:
+                    Current_Plot.cla()
+                    Current_Plot.plot(*zip(*Current_List),color='darkorange')
+                    Current_Plot.grid(visible=True)
+                    plot2.draw()
+                    
+            Position_Index = Position_Index + 1
 
-        if Refresh_Events <= 1:
-            Current_List[Refresh_Events] = (Refresh_Events,float(Data_list[14]))
-        elif Refresh_Events < GPSTrace_Lenght:
-            Current_List.append((Refresh_Events,float(Data_list[14])))
-        else:
-            Current_List[0] = (Refresh_Events,float(Data_list[14]))
-            Current_List.rotate(-1)
+            if Position_Index % GPSTrace_Lenght == 0:
+                Position_Index = 0
+            Refresh_Events += 1
+            stop = time.time()
+            print("%f",stop-start)
 
-        if Refresh_Events > 1:
-            Current_Plot.cla()
-            Current_Plot.plot(*zip(*Current_List),color='darkorange')
-            Current_Plot.grid(visible=True)
-            plot2.draw()
-              
-    Position_Index = Position_Index + 1
-
-    if Position_Index % GPSTrace_Lenght == 0:
-        Position_Index = 0
     window.after(1, update_ip)
-    Refresh_Events += 1
-    stop = time.time()
-    print("%f",stop-start)
 
 
 window.geometry("1280x832")
@@ -593,7 +595,5 @@ Connect_Button.place(x=240,y=8)
 window.resizable(False, False)
 window.title('Air Telemetry Visualizer V0.5')
 window.iconbitmap("Plane.ico")
-
-
 
 window.mainloop()
