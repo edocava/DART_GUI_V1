@@ -184,9 +184,9 @@ def update_ip():
     stop = time.time()
     print("%f",stop-start)
 
-window.geometry("1280x832")
-window.configure(bg = "#161618")
 
+window.geometry("1280x832")
+window.configure(bg = BGCOLOR)
 
 canvas = Canvas(
     window,
@@ -199,6 +199,7 @@ canvas = Canvas(
 )
 
 canvas.place(x = 0, y = 0)
+
 canvas.create_text(
     55.0,
     82.0,
@@ -592,5 +593,7 @@ Connect_Button.place(x=240,y=8)
 window.resizable(False, False)
 window.title('Air Telemetry Visualizer V0.5')
 window.iconbitmap("Plane.ico")
+
+
 
 window.mainloop()
