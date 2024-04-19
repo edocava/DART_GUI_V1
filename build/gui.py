@@ -182,7 +182,7 @@ def update_ip():
                 Position_Index = 0
             Refresh_Events += 1
             stop = time.time()
-            print("%f",stop-start)
+            print(f"{stop-start}")
 
     window.after(1, update_ip)
 
