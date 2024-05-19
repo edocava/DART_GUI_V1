@@ -46,7 +46,7 @@ def checksum(string):
         result = result ^ string[i]
     
     #result = result % 256
-    hex_str = hex(result)[2:]
+    hex_str = "{:02x}".format(result)
 
     return hex_str.upper()
 
