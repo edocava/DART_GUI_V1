@@ -28,7 +28,7 @@ def relative_to_assets(path: str) -> Path:
 
 #Begin user defined variables
 Baro_Alpha = 8006.0         #Parameter from standard atmosphere model
-Field_Altitude = 307.0      #Altitude of the airfield used for barometer calibration
+Field_Altitude = 184.0      #Altitude of the airfield used for barometer calibration (Condor e.V near Aachen)
 GPSTrace_Lenght = 70        #GPS trace lenght in samples
 BGCOLOR = '#161618'
 #End user defined variables
@@ -517,14 +517,6 @@ Temperature = canvas.create_text(
     font=("Inter", 20 * -1)
 )
 
-#plot1 = canvas.create_rectangle(
-#    454.0,
-#    545.0,
-#    840.0,
-#    783.0,
-#    fill="#D5D5D5",
-#    outline="")
-
 # the figure that will contain the plot
 ALT_Plot = Figure(figsize = (4.2, 2.6), dpi = 100)  
 ALT_Plot.set_facecolor(BGCOLOR)
@@ -538,15 +530,6 @@ Altitude_Plot.set_facecolor(BGCOLOR)
 plot1 = FigureCanvasTkAgg(figure=ALT_Plot,master=window)
 plot1.draw()
 plot1.get_tk_widget().place(x=454,y=545)
-
-
-#plot2 = canvas.create_rectangle(
-#    863.0,
-#    545.0,
-#    1249.0,
-#    783.0,
-#    fill="#D5D5D5",
-#    outline="")
 
 # the figure that will contain the plot
 CUR_Plot = Figure(figsize = (4.2, 2.6), dpi = 100)  
@@ -566,14 +549,7 @@ map = tkintermapview.TkinterMapView(window,width=795,height=480,corner_radius=10
 map.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=20)  # google satellite
 map.place(x=454,y=34)
 map.set_zoom(15)
-
-#map = canvas.create_rectangle(
-#    454.0,
-#    34.0,
-#    1249.0,
-#    514.0,
-#    fill="#D5D5D5",
-#    outline="")
+#map.set_position(50.83331266457037, 6.143613257355146)
 
 Alt_Button = Button(window, text ="Reset Altitude", command = Reset_Altitude,bg='grey',width= 8, height=1,highlightbackground=BGCOLOR)
 Alt_Button.place(x=80,y=600)

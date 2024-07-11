@@ -24,10 +24,11 @@ def is_float(string):
         return False
 
 def ReadData():
-    serialInst.flush()
-    packet = serialInst.readline()
-    while( "$"  not in str(packet) and len(str(packet))!=135):
-        packet = serialInst.readline()
+    #serialInst.flush()
+    packet = serialInst.read_until(expected=b"\n",size=None)
+    print(packet)
+    #while( "$"  not in str(packet) and len(str(packet))!=135):
+    #    packet = serialInst.read(64)
 
     word=str(packet).strip("b'$").strip("'\\n")
     lista_parole = word.strip(";").split(",").copy()
