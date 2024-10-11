@@ -2,7 +2,7 @@ import webbrowser
 import re
 import sys
 import os
-import  tkinter as tk
+import tkinter as tk
 import tkinter.messagebox as tk1
 import tkinter.filedialog
 from pathlib import Path

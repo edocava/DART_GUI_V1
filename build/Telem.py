@@ -2,7 +2,7 @@ import serial
 import math
 import serial.tools.list_ports
 
-serialInst = serial.Serial()
+serialInst = serial.Serial
 
 def Connect_Serial(Serial_Port):
     serialInst.baudrate = 115200
