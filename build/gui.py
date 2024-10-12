@@ -4,157 +4,53 @@
 import time
 from collections import *
 from pathlib import Path
-# from tkinter import *
 
+import terminal
+from terminal import TerminalApp
+from bitmask import Bitmask, unpack_bitmask
+import tkinter as tk
 from tkinter import Tk, Canvas, Button, StringVar
-from tkinter import ttk
-
 import matplotlib.pyplot
 from matplotlib.figure import Figure
-
 from Telem import *
-
 matplotlib.use('TkAgg')
 import tkintermapview
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = OUTPUT_PATH / Path(
-    r"/Users/angeloromano/Documents/ICARUS/AirTelemGUI0.1/Tkinter-Designer-master/build/assets/frame0")
 
 matplotlib.pyplot.style.use('dark_background')
 matplotlib.rcParams['grid.color'] = 'grey'
 
 
-def relative_to_assets(path: str) -> Path:
-    return ASSETS_PATH / Path(path)
-
-
-#Begin user defined variables
-Baro_Alpha = 8006.0  #Parameter from standard atmosphere model
-Field_Altitude = 184.0  #Altitude of the airfield used for barometer calibration (Condor e.V near Aachen)
-GPSTrace_Lenght = 70  #GPS trace lenght in samples
 BGCOLOR = '#161618'
 
-
-#End user defined variables
-
-class Bitmask:
-    def __init__(self, imu, mag, gps, alt, pb_init, pb_op, ld_com, ld_sd):
-        self.imu = imu
-        self.mag = mag
-        self.gps = gps
-        self.alt = alt
-        self.pb_init = pb_init
-        self.pb_op = pb_op
-        self.ld_com = ld_com
-        self.ld_sd = ld_sd
-
-
 #System Variables
-AltGPS_Offset = 0.0
-AltBaro_Offset = 0.0
-GPS_Alt = 0.0
-Barometric_Altitude = 0.0
-Baro_P0 = 5.0
-Baro_Pressure = 0.0
-Position_Index = 0
-Refresh_Events = 0
-Position_List = deque([0.0, 0.0])
-Altitude_List = deque([0.0, 0.0])
+LATITUDE = 0.0
+LONGITUDE = 0.0
+ALTITUDE = 0.0
 
-window = Tk()
-
-
-def Init_Serial():
-    global n
-    Serial_Port = n.get()
-    Connect_Serial(Serial_Port)
-    window.after(100, update_ip)
-
-
-def update_ip():
-    start = time.time()
-    global GPSTrace_Lenght
-    global Refresh_Events
-    global AltBaro_Offset
-    global AltGPS_Offset
-    global GPS_Alt
-    global Barometric_Altitude
-    global Baro_P0
-    global Field_Altitude
-    global Baro_Pressure
-    global path
-    global Position_Index
-    Data_list = ["00"] * 18
-
-    Data_list_temp = ReadData()
-    if len(Data_list_temp) == 19:
-        if Data_list_temp[18] == True:
-            if len(Data_list_temp) > 15:
-                Data_list = Data_list_temp
-
-            canvas.itemconfigure(Latitude, text=Data_list[1] + '°')
-            canvas.itemconfigure(Longitude, text=Data_list[2] + '°')
-
-            if (is_float(Data_list[1]) and (is_float(Data_list[2]))):
-
-                if Refresh_Events <= 1:
-                    Position_List[Refresh_Events] = (float(Data_list[1]), float(Data_list[2]))
-                elif Refresh_Events < GPSTrace_Lenght:
-                    Position_List.append((float(Data_list[1]), float(Data_list[2])))
-                else:
-                    Position_List[0] = (float(Data_list[1]), float(Data_list[2]))
-                    Position_List.rotate(-1)
-
-                map.set_position(float(Data_list[1]), float(Data_list[2]))
-
-                if Refresh_Events == 1:
-                    path = map.set_path([Position_List[0], Position_List[1]])
-                elif Refresh_Events > 1:
-                    path.set_position_list(Position_List)
-
-            if (is_float(Data_list[7])):
-                GPS_Alt = float(Data_list[7]) - AltGPS_Offset
-                GPS_Alt = round(GPS_Alt, 2)
-                canvas.itemconfigure(Altitude, text=str(GPS_Alt) + ' m')
-
-            if (is_float(Data_list[9]) and float(Data_list[9] != 0)):
-                Baro_Pressure = float(Data_list[9])
-                Barometric_Altitude = (- Baro_Alpha * math.log(float(Data_list[9]) / Baro_P0)) - AltBaro_Offset
-                Barometric_Altitude = round(Barometric_Altitude, 2)
-
-                if Refresh_Events <= 1:
-                    Altitude_List[Refresh_Events] = (Refresh_Events, Barometric_Altitude)
-                elif Refresh_Events < GPSTrace_Lenght:
-                    Altitude_List.append((Refresh_Events, Barometric_Altitude))
-                else:
-                    Altitude_List[0] = (Refresh_Events, Barometric_Altitude)
-                    Altitude_List.rotate(-1)
-
-                if Refresh_Events > 1:
-                    Altitude_Plot.cla()
-                    Altitude_Plot.plot(*zip(*Altitude_List), color='darkorange')
-                    Altitude_Plot.grid(visible=True)
-                plot1.draw()
-
-            if (is_float(Data_list[12]) and is_float(Data_list[14])):
-                P = float(Data_list[12]) * float(Data_list[14])
-                P = round(P, 1)
-
-            Position_Index = Position_Index + 1
-
-            if Position_Index % GPSTrace_Lenght == 0:
-                Position_Index = 0
-            Refresh_Events += 1
-            stop = time.time()
-            print(f"{stop - start}")
-
-    window.after(1, update_ip)
-
-
-window.geometry("1280x832")
+window = tk.Tk()
+terminal_root = tk.Tk()
+window.geometry("550x250+300+300")
 window.configure(bg=BGCOLOR)
+window.focus_force()
+
+term_app = TerminalApp(terminal_root)
+
+def read_from_terminal():
+    LATITUDE = terminal.lat
+    LONGITUDE = terminal.lon
+    ALTITUDE = terminal.alt
+
+
+def update_gui():
+    start = time.time()
+
+    read_from_terminal()
+    window.after(1, update_gui)
+
+
+
 
 canvas = Canvas(
     window,
@@ -167,8 +63,7 @@ canvas = Canvas(
 )
 
 canvas.place(x=0, y=0)
-
-y_position = 130  # Inizia a 130, come nel tuo codice originale
+y_position = 70  # Inizia a 130, come nel tuo codice originale
 
 
 # Funzione per aggiungere testo in un layout verticale
@@ -211,153 +106,9 @@ Status = add_text("Status:", read_status(), y_position, 20)
 y_position += 40
 
 
-def unpack_bitmask(mask: Bitmask, y_start):
-    imu_color = ""
-    mag_color = ""
-    gps_color = ""
-    alt_color = ""
-    pb_init_color = ""
-    pb_op_color = ""
-    ld_com_color = ""
-    ld_sd_color = ""
-
-    y_start_1 = y_start
-    y_start_2 = y_start
-
-    if mask.imu == 0:
-        imu_color = 'red'
-    else:
-        imu_color = 'green'
-
-    if mask.gps == 0:
-        gps_color = 'red'
-    else:
-        gps_color = 'green'
-
-    if mask.alt == 0:
-        alt_color = 'red'
-    else:
-        alt_color = 'green'
-
-    if mask.mag == 0:
-        mag_color = 'red'
-    else:
-        mag_color = 'green'
-
-    if mask.pb_init == 0:
-        pb_init_color = 'red'
-    else:
-        pb_init_color = 'green'
-
-    if mask.pb_op == 0:
-        pb_op_color = 'red'
-    else:
-        pb_op_color = 'green'
-
-    if mask.ld_sd == 0:
-        ld_sd_color = 'red'
-    else:
-        ld_sd_color = 'green'
-
-    if mask.ld_com == 0:
-        ld_com_color = 'red'
-    else:
-        ld_com_color = 'green'
-
-    #IMU
-    canvas.create_text(
-        56.0,  # Posizione orizzontale fissa
-        y_start_1,
-        anchor="nw",
-        text="IMU",
-        fill=imu_color,
-        font=("Inter", 16)
-    )
-    y_start_1 += 30
-
-    #MAG
-    canvas.create_text(
-        56.0,  # Posizione orizzontale fissa
-        y_start_1,
-        anchor="nw",
-        text="MAG",
-        fill=mag_color,
-        font=("Inter", 16)
-    )
-    y_start_1 += 30
-
-    #GPS
-    canvas.create_text(
-        56.0,  # Posizione orizzontale fissa
-        y_start_1,
-        anchor="nw",
-        text="GPS",
-        fill=gps_color,
-        font=("Inter", 16)
-    )
-    y_start_1 += 30
-
-    #ALT
-    canvas.create_text(
-        56.0,  # Posizione orizzontale fissa
-        y_start_1,
-        anchor="nw",
-        text="ALT",
-        fill=alt_color,
-        font=("Inter", 16)
-    )
-    y_start_1 += 30
-
-    #PB_INIT
-    canvas.create_text(
-        200.0,  # Posizione orizzontale fissa
-        y_start_2,
-        anchor="nw",
-        text="PB_INIT",
-        fill=pb_init_color,
-        font=("Inter", 16)
-    )
-    y_start_2 += 30
-
-    #PB_OP
-    canvas.create_text(
-        200.0,  # Posizione orizzontale fissa
-        y_start_2,
-        anchor="nw",
-        text="PB_OP",
-        fill=pb_op_color,
-        font=("Inter", 16)
-    )
-    y_start_2 += 30
-
-    #LD_SD
-    canvas.create_text(
-        200.0,  # Posizione orizzontale fissa
-        y_start_2,
-        anchor="nw",
-        text="LD_SD",
-        fill=ld_sd_color,
-        font=("Inter", 16)
-    )
-    y_start_2 += 30
-
-    #LD_COM
-    canvas.create_text(
-        200.0,  # Posizione orizzontale fissa
-        y_start_2,
-        anchor="nw",
-        text="LD_COM",
-        fill=ld_com_color,
-        font=("Inter", 16)
-    )
-
-    y_start_2 += 30
-
-    return y_start_1
-
 
 bm = Bitmask(1, 1, 1, 1, 1, 1, 1, 1)
-y_position = unpack_bitmask(bm, y_position)
+y_position = unpack_bitmask(bm, y_position, canvas)
 
 # the figure that will contain the plot
 ALT_Plot = Figure(figsize=(4.2, 2.6), dpi=100)
@@ -377,26 +128,20 @@ plot1.get_tk_widget().place(x=36, y=y_position)
 y = [i ** 2 for i in range(101)]
 # adding the subplot
 
-map = tkintermapview.TkinterMapView(window, width=750, height=750, corner_radius=10)
-map.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=20)  # google satellite
-map.place(x=454, y=34)
-map.set_zoom(15)
-#map.set_position(50.83331266457037, 6.143613257355146)
 
-n = StringVar()
-Devlist = ttk.Combobox(window, textvariable=n, width=13, height=1, state="readonly")
-Devlist.place(x=90, y=10)
+#map_frame = tk.Frame(window)
+map_widget = tkintermapview.TkinterMapView(window, width=750, height=750, corner_radius=10)
+map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=20)  # google satellite
+map_widget.place(x=454, y=34)
+map_widget.set_zoom(15)
+map_widget.set_position(50.83331266457037, 6.143613257355146)
 
-Serial_Ports = get_SerialPorts()
-for i in range(len(Serial_Ports)):
-    Devlist['values'] = Serial_Ports[i].device
-
-Connect_Button = Button(window, text="Connect", command=Init_Serial, bg='black', width=3, height=1,
-                        highlightbackground=BGCOLOR)
-Connect_Button.place(x=240, y=8)
 
 window.resizable(False, False)
 window.title('Ground Station DART V1.0')
 window.iconbitmap("Plane.ico")
 
-window.mainloop()
+
+
+
+
