@@ -16,6 +16,7 @@ alt = None
 check = None
 
 VERBOSE_ON = 1
+RX_CNT = 0
 
 class TerminalApp:
     def __init__(self, root):
@@ -38,6 +39,7 @@ class TerminalApp:
         self.waiting_for_serial_input = True
         GS_Funcs.init_Serial()
         self.showPorts()
+        self.root.resizable(width=False, height=False)
 
     def showPorts(self):
         self.text_widget.insert(tk.END, "Listing all available ports...\n")
@@ -138,6 +140,25 @@ class TerminalApp:
                         self.history_idx_back = self.history_idx
                     elif opt.strip().split(' ')[1].lower() == "off":
                         VERBOSE_ON = 0
+                        self.history.append(opt)
+                        self.history_idx += 1
+                        self.history_idx_back = self.history_idx
+                    else:
+                        self.print_help()
+                else:
+                    self.print_help()
+            elif "set_lat" in opt:
+                global lat
+                lat = int(opt.strip().split(' ')[1])
+            elif "set_rx_cont" in opt:
+                if len(opt.strip().split(' ')) == 2:
+                    if opt.strip().split(' ')[1].lower() == "on":
+                        RX_CNT = 1
+                        self.history.append(opt)
+                        self.history_idx += 1
+                        self.history_idx_back = self.history_idx
+                    elif opt.strip().split(' ')[1].lower() == "off":
+                        RX_CNT = 0
                         self.history.append(opt)
                         self.history_idx += 1
                         self.history_idx_back = self.history_idx

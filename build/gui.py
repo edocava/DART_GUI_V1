@@ -2,75 +2,75 @@
 # https://github.com/ParthJadhav/Tkinter-Designer
 
 import time
-from collections import *
-from pathlib import Path
-
 import terminal
 from terminal import TerminalApp
-from bitmask import Bitmask, unpack_bitmask
 import tkinter as tk
 from tkinter import Tk, Canvas, Button, StringVar
 import matplotlib.pyplot
 from matplotlib.figure import Figure
-from Telem import *
+
 matplotlib.use('TkAgg')
 import tkintermapview
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-
 matplotlib.pyplot.style.use('dark_background')
 matplotlib.rcParams['grid.color'] = 'grey'
-
-
-BGCOLOR = '#161618'
-
-#System Variables
-LATITUDE = 0.0
-LONGITUDE = 0.0
-ALTITUDE = 0.0
-
-window = tk.Tk()
-terminal_root = tk.Tk()
-window.geometry("550x250+300+300")
-window.configure(bg=BGCOLOR)
-window.focus_force()
-
-term_app = TerminalApp(terminal_root)
+from bitmask import unpack_error
 
 def read_from_terminal():
+    global LATITUDE, LONGITUDE, ALTITUDE, STATUS, ERRORS
     LATITUDE = terminal.lat
     LONGITUDE = terminal.lon
     ALTITUDE = terminal.alt
+    STATUS = terminal.state
+    ERRORS = terminal.err
+    print("read from terminal")
 
 
-def update_gui():
-    start = time.time()
-
+def update_gui(window, terminal_root, canvas):
     read_from_terminal()
-    window.after(1, update_gui)
+    terminal_root.focus_force()
+    y_alt_pos = 70
+    add_label_and_field("Altitudine:", f"{ALTITUDE} m\n", y_alt_pos, 20)
+
+    y_lat_pos = 110
+    add_label_and_field("Latitudine:", f"{LATITUDE}°\n", y_lat_pos, 20)
+
+    y_lon_pos = 150
+    add_label_and_field("Longitudine:", f"{LONGITUDE}°\n", y_lon_pos, 20)
+
+    y_status_pos = 190
+    Status = add_label_and_field("Status:", STATUS, y_status_pos, 20)
+
+    y_plot_pos = 230
+    add_alt_plot(window, x_start=50, y_start=y_plot_pos)
+
+    y_error_pos = 550
+    unpack_error(0b11111111, x_start=50, y_start=y_error_pos, canvas=canvas)
+
+    terminal_root.focus_force()
+    window.after(1000, update_gui, window, terminal_root, canvas)
 
 
+def add_alt_plot(root, x_start, y_start):
+    # the figure that will contain the plot
+    ALT_Plot = Figure(figsize=(4.2, 2.6), dpi=100)
+    ALT_Plot.set_facecolor(BGCOLOR)
+    ALT_Plot.suptitle('Altitude AGL (m)')
+    # list of squares
+    y = [i ** 2 for i in range(101)]
+    # adding the subplot
+    Altitude_Plot = ALT_Plot.add_subplot()
+    Altitude_Plot.grid(visible=True)
+    Altitude_Plot.set_facecolor(BGCOLOR)
+    plot1 = FigureCanvasTkAgg(figure=ALT_Plot, master=root)
+    plot1.draw()
+    plot1.get_tk_widget().place(x=x_start, y=y_start)
 
 
-canvas = Canvas(
-    window,
-    bg=BGCOLOR,
-    height=832,
-    width=1280,
-    bd=0,
-    highlightthickness=0,
-    relief="ridge"
-)
-
-canvas.place(x=0, y=0)
-y_position = 70  # Inizia a 130, come nel tuo codice originale
-
-
-# Funzione per aggiungere testo in un layout verticale
-def add_text(label, value, y_position, font_size):
-    # Creazione del testo dell'etichetta
+def add_label_and_field(label, value, y_position, font_size):
     canvas.create_text(
-        56.0,  # Posizione orizzontale fissa
+        56.0,
         y_position,
         anchor="nw",
         text=label,
@@ -78,9 +78,8 @@ def add_text(label, value, y_position, font_size):
         font=("Inter", font_size * -1)
     )
 
-    # Creazione del testo del valore
     return canvas.create_text(
-        209.0,  # Posizione orizzontale fissa per il valore
+        209.0,
         y_position,
         anchor="nw",
         text=value,
@@ -88,60 +87,61 @@ def add_text(label, value, y_position, font_size):
         font=("Inter", font_size * -1)
     )
 
-# Aggiunta degli elementi in un layout verticale
-Altitude = add_text("Altitudine:", "120.00 m\n", y_position, 20)
-y_position += 40  # Incrementa la posizione verticale per il prossimo elemento
+#############################################
 
-Latitude = add_text("Latitudine:", "45.9312313°\n", y_position, 20)
-y_position += 40  # Incrementa di meno per il font più piccolo
+BGCOLOR = '#161618'
 
-Longitude = add_text("Longitudine:", "7.812312391°\n", y_position, 20)
-y_position += 40
+#System Variables
+LATITUDE = 45.9312313
+LONGITUDE = 7.812312391
+ALTITUDE = 120.0
+STATUS = 0.0
+ERRORS = 0
 
-def read_status():
-    status = "dio cane"
-    return status
-
-Status = add_text("Status:", read_status(), y_position, 20)
-y_position += 40
+##############################################
 
 
+window = tk.Tk()
+terminal_root = tk.Tk()
+terminal_root.geometry("550x250+50+700")
+window.geometry("1280x800+50+50")
+window.configure(bg=BGCOLOR)
+terminal_root.focus_force()
+terminal_root.attributes("-topmost", True)
+window.attributes("-topmost", False)
 
-bm = Bitmask(1, 1, 1, 1, 1, 1, 1, 1)
-y_position = unpack_bitmask(bm, y_position, canvas)
+term_app = TerminalApp(terminal_root)
 
-# the figure that will contain the plot
-ALT_Plot = Figure(figsize=(4.2, 2.6), dpi=100)
-ALT_Plot.set_facecolor(BGCOLOR)
-ALT_Plot.suptitle('Altitude AGL (m)')
-# list of squares
-y = [i ** 2 for i in range(101)]
-# adding the subplot
-Altitude_Plot = ALT_Plot.add_subplot()
-Altitude_Plot.grid(visible=True)
-Altitude_Plot.set_facecolor(BGCOLOR)
-plot1 = FigureCanvasTkAgg(figure=ALT_Plot, master=window)
-plot1.draw()
-plot1.get_tk_widget().place(x=36, y=y_position)
+canvas = Canvas(window, bg=BGCOLOR, height=720, width=720, bd=0, highlightthickness=0, relief="ridge")
+canvas.place(x=0, y=0)
 
-# list of squares
-y = [i ** 2 for i in range(101)]
-# adding the subplot
+y_alt_pos = 70
+add_label_and_field("Altitudine:", f"{ALTITUDE} m\n", y_alt_pos, 20)
 
+y_lat_pos = 110
+add_label_and_field("Latitudine:", f"{LATITUDE}°\n", y_lat_pos, 20)
 
-#map_frame = tk.Frame(window)
-map_widget = tkintermapview.TkinterMapView(window, width=750, height=750, corner_radius=10)
-map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=20)  # google satellite
-map_widget.place(x=454, y=34)
+y_lon_pos = 150
+add_label_and_field("Longitudine:", f"{LONGITUDE}°\n", y_lon_pos, 20)
+
+y_status_pos = 190
+Status = add_label_and_field("Status:", STATUS, y_status_pos, 20)
+
+y_plot_pos = 230
+add_alt_plot(window, x_start=50, y_start=y_plot_pos)
+
+y_error_pos = 550
+unpack_error(0b11111111, x_start=50, y_start=y_error_pos, canvas=canvas)
+
+map_widget = tkintermapview.TkinterMapView(window, width=600, height=600, corner_radius=10)
+map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga",
+                           max_zoom=20)  # google satellite
+map_widget.place(x=600, y=30)
 map_widget.set_zoom(15)
-map_widget.set_position(50.83331266457037, 6.143613257355146)
-
+map_widget.set_position(45.07916667, 7.67611111)
 
 window.resizable(False, False)
 window.title('Ground Station DART V1.0')
 window.iconbitmap("Plane.ico")
-
-
-
 
 
