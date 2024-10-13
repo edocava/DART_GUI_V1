@@ -7,13 +7,13 @@ import time
 import datetime
 import serial.tools.list_ports as ports
 
-current_state = None
-state = None
-err = None
-lat = None
-lon = None
-alt = None
-check = None
+current_state = 0.0
+state = 0.0
+err = 0
+lat = 0.0
+lon = 0.0
+alt = 0
+check = 0.0
 
 VERBOSE_ON = 1
 RX_CNT = 0
@@ -55,7 +55,6 @@ class TerminalApp:
 
         if self.waiting_for_serial_input:
             opt = opt.split(' ')[-1]
-            print(opt)
             try:
                 GS_Funcs.Connect_Serial(str(ports.comports()[int(opt)]).split(' ')[0])
                 self.waiting_for_serial_input = False
@@ -235,11 +234,8 @@ class TerminalApp:
     def choose_serial(self):
         return GS_Funcs.choose_Serial_term(self.text_widget)
 
-# root = tk.Tk()
-# app = TerminalApp(root)
-# root.geometry("550x250+300+300")
-# root.focus_force()
-#
-# root.mainloop()
+    # def keep_focus(self):
+    #     self.root.focus_force()
+    #     self.root.after(1, self.keep_focus)
 
 

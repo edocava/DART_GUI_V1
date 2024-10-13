@@ -1,12 +1,10 @@
-from gui import window
+from gui import GUI
+import tkinter as tk
 
 def main():
-    #while 1:
-        # window.update_idletasks()
-        # window.update()
-        # terminal_root.update_idletasks()
-        # terminal_root.update()
-    window.mainloop()
+    root = tk.Tk()
+    my_gui = GUI(root)
+    root.mainloop()
 
 if __name__ == '__main__':
     main()

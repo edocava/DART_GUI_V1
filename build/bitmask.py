@@ -11,27 +11,25 @@ def unpack_error(err, x_start, y_start, canvas):
         else:
             color_vec.append('green')
 
-    y_start_tmp = y_start
-
+    #TODO: improve this f*****g layout
     for i in range(4):
         canvas.create_text(
-            x_start,
-            y_start_tmp,
+            x_start+60*i,
+            y_start,
             anchor="nw",
             text=name_vec[i],
             fill=color_vec[i],
-            font=("Inter", 16)
+            font=("Courier", 18, "bold")
         )
 
+    for i in range(4,8):
         canvas.create_text(
-            x_start+120.0,
-            y_start_tmp,
+            x_start+80*i-60,
+            y_start,
             anchor="nw",
-            text=name_vec[i+4],
-            fill=color_vec[i+4],
-            font=("Inter", 16)
+            text=name_vec[i],
+            fill=color_vec[i],
+            font=("Courier", 18, "bold")
         )
 
-        y_start_tmp += 30
 
-    return y_start_tmp
