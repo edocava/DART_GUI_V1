@@ -34,36 +34,66 @@ err = 0
 lat = 45.07916667
 lon = 7.67611111
 alt = 0
+baro_alt = 0
 check = 0.0
+
+class Point():
+    def __init__(self, tmp, height):
+        self.tmp = tmp
+        self.height = height
+
+class LogSample():
+    def __init__(self, state, lat, lon, baro_alt, alt, check):
+        self.state = state
+        self.lat = lat
+        self.lon = lon
+        self.baro_alt = baro_alt
+        self.alt = alt
+        self.check = check
+
+def serialize(obj, file_path: str):
+    with open(file_path, 'ab') as file:
+        pickle.dump(obj, file)
+    file.close()
+
+def deserialize(file_path: str):
+    with open(file_path, 'rb') as file:
+        while True:
+            try:
+                obj = pickle.load(file)
+                print(obj.state, obj.lat, obj.lon, obj.baro_alt, obj.alt, obj.check)
+            except EOFError:
+                break
+    file.close()
 
 class GUI():
     def __init__(self, root):
 
-        global lat, lon
-        #self.terminal_root = tk.Tk()
+        global lat, lon, alt, baro_alt
         self.window = root
-        #self.terminal_root.geometry("550x250+50+700")
         self.window.geometry("1280x800+50+50")
         self.window.configure(bg=BGCOLOR)
-        #self.terminal_root.focus_force()
-        #self.terminal_root.attributes("-topmost", True)
         self.window.attributes("-topmost", False)
 
-
+        self.cnt = 0
+        self.points_gps = list()
+        self.points_baro = list()
         self.canvas = Canvas(self.window, bg=BGCOLOR, height=720, width=720, bd=0, highlightthickness=0, relief="ridge")
         self.canvas.place(x=0, y=0)
 
-        self.add_label_and_field("Altitudine:", f"{alt} m\n", 30, 20, self.canvas)
-        self.add_label_and_field("Latitudine:", f"{lat}°\n", 70, 20, self.canvas)
-        self.add_label_and_field("Longitudine:", f"{lon}°\n", 110, 20, self.canvas)
-        self.add_label_and_field("Status:", self.get_state(), 150, 20, self.canvas)
-        self.add_alt_plot(self.window, x_start=50, y_start=190)
-        unpack_error(0b11111111, x_start=50, y_start=470, canvas=self.canvas)
+        self.add_label_and_field("Altitudine:", f"{alt:.1f} m\n", 30, 18, self.canvas)
+        self.add_label_and_field("BaroAlt:", f"{baro_alt:.1f} m\n", 60, 18, self.canvas)
+        self.add_label_and_field("Latitudine:", f"{lat:.5f}°\n", 90, 18, self.canvas)
+        self.add_label_and_field("Longitudine:", f"{lon:.5f}°\n", 120, 18, self.canvas)
+        self.add_label_and_field("Status:", self.get_state(), 150, 18, self.canvas)
+        now = datetime.datetime.now()
+        formatted_time = now.strftime("%H:%M:%S.%f")[:-4]
+        self.add_label_and_field("TS:", f"{formatted_time}\n", 180, 18, self.canvas)
+        self.add_alt_plot(self.window, x_start=70, y_start=220)
+        unpack_error(0b11111111, x_start=50, y_start=500, canvas=self.canvas)
+        self.terminal = tk.Text(self.window, height=12, width=50, bg=BGCOLOR, fg="green", font=("Courier", 16))
+        self.terminal.place(x=50, y=540)
 
-        self.terminal = tk.Text(self.window, height=15, width=50, bg=BGCOLOR, fg="green", font=("Courier", 16))
-        self.terminal.place(x=50, y=510)
-
-        # Binding per il tasto Invio
         self.terminal.bind("<Return>", self.on_enter)
         self.terminal.bind("<Up>", lambda event: "break")
         self.terminal.bind("<Down>", lambda event: "break")
@@ -72,6 +102,9 @@ class GUI():
         self.history_idx = 0
         self.history_idx_back = 0
         self.terminal.mark_set("insert", "end")
+        self.terminal.focus()
+        self.terminal.yview_scroll(1, "units")
+
         self.waiting_for_serial_input = True
         GS_Funcs.init_Serial()
         self.showPorts()
@@ -82,20 +115,12 @@ class GUI():
         self.map_widget.place(x=650, y=30)
         self.map_widget.set_zoom(15)
         self.map_widget.set_position(lat, lon)
+        # TODO small_marker_icon = PhotoImage(file="path_to_small_marker_icon.png")
+        self.map_widget.set_marker(lat, lon, text="") #TODO !! self.map_widget.set_marker(lat, lon, text="", icon=small_marker_icon)
 
         self.window.resizable(False, False)
         self.window.title('Ground Station DART V1.0')
         self.window.iconbitmap("Plane.ico")
-
-        #window.after(1000, update_gui, window, terminal_root, canvas)
-
-    # def read_from_terminal(self):
-    #     global LATITUDE, LONGITUDE, ALTITUDE, STATUS, ERRORS
-    #     LATITUDE = terminal.lat
-    #     LONGITUDE = terminal.lon
-    #     ALTITUDE = terminal.alt
-    #     STATUS = terminal.state
-    #     ERRORS = terminal.err
 
     def get_state(self):
         global state
@@ -103,55 +128,71 @@ class GUI():
 
     def update_gui(self, window, canvas):
         global lat, lon
-        #self.read_from_terminal()
-        #terminal_root.attributes('-topmost', True)
         canvas.delete("all")
-        #terminal_root.focus_force()
         self.add_label_and_field("Altitudine:", f"{alt} m\n", 30, 20, canvas)
         self.add_label_and_field("Latitudine:", f"{lat}°\n", 70, 20, canvas)
         self.add_label_and_field("Longitudine:", f"{lon}°\n", 110, 20, canvas)
         self.add_label_and_field("Status:", self.get_state(), 150, 20, canvas)
         self.add_alt_plot(window, x_start=50, y_start=190)
-        unpack_error(0b11111111, x_start=50, y_start=470, canvas=canvas)
+        unpack_error(0b11111111, x_start=50, y_start=500, canvas=canvas)
         self.map_widget.set_position(lat, lon)
+        self.map_widget.set_marker(lat, lon, text="")
 
-        #terminal_root.focus_force()
-        #window.after(1000, self.update_gui, window, canvas)
 
     def add_alt_plot(self, root, x_start, y_start):
-        # the figure that will contain the plot
         ALT_Plot = Figure(figsize=(4.2, 2.6), dpi=100)
         ALT_Plot.set_facecolor(BGCOLOR)
         ALT_Plot.suptitle('Altitude AGL (m)')
-        # list of squares
-        y = [i ** 2 for i in range(101)]
-        # adding the subplot
         Altitude_Plot = ALT_Plot.add_subplot()
         Altitude_Plot.grid(visible=True)
         Altitude_Plot.set_facecolor(BGCOLOR)
-        plot1 = FigureCanvasTkAgg(figure=ALT_Plot, master=root)
-        plot1.draw()
-        plot1.get_tk_widget().place(x=x_start, y=y_start)
+
+        for i in range(self.cnt):
+            Altitude_Plot.scatter(self.points_gps[i].tmp, self.points_gps[i].height, color='red', s=15, alpha=1)
+            Altitude_Plot.scatter(self.points_baro[i].tmp, self.points_baro[i].height, color='blue', s=15, alpha=1)
+
+        plot = FigureCanvasTkAgg(figure=ALT_Plot, master=root)
+        plot.draw()
+        plot.get_tk_widget().place(x=x_start, y=y_start)
 
 
-    def add_label_and_field(self, label, value, y_position, font_size, canvas):
-        canvas.create_text(
-            56.0,
-            y_position,
-            anchor="nw",
-            text=label,
-            fill="#E5E1E1",
-            font=("Inter", font_size * -1)
-        )
+    def add_label_and_field(self, label, value, y_position, font_size, canvas, x_position=None):
+        if x_position is None:
+            canvas.create_text(
+                56.0,
+                y_position,
+                anchor="nw",
+                text=label,
+                fill="#E5E1E1",
+                font=("Inter", font_size * -1)
+            )
 
-        canvas.create_text(
-            209.0,
-            y_position,
-            anchor="nw",
-            text=value,
-            fill="#E5E1E1",
-            font=("Inter", font_size * -1)
-        )
+            canvas.create_text(
+                209.0,
+                y_position,
+                anchor="nw",
+                text=value,
+                fill="#E5E1E1",
+                font=("Inter", font_size * -1)
+            )
+        else:
+            canvas.create_text(
+                x_position,
+                y_position,
+                anchor="nw",
+                text=label,
+                fill="#E5E1E1",
+                font=("Inter", font_size * -1)
+            )
+
+            canvas.create_text(
+                x_position + 153.0,
+                y_position,
+                anchor="nw",
+                text=value,
+                fill="#E5E1E1",
+                font=("Inter", font_size * -1)
+            )
 
     def showPorts(self):
         self.terminal.insert(tk.END, "Listing all available ports...\n")
@@ -180,14 +221,11 @@ class GUI():
             self.terminal.insert(tk.END, "\n")
             if "set_state" in opt:
                 if len(opt.strip().split(' ')) == 1:
-                    self.terminal.insert(tk.END,"Possible states\n")
-                    self.terminal.insert(tk.END,"- sleep\n")
-                    self.terminal.insert(tk.END,"- wake_up\n")
-                    self.terminal.insert(tk.END,"- disarm\n")
+                    self.terminal.insert(tk.END, "Possible states\n")
+                    self.terminal.insert(tk.END, "- sleep\n")
+                    self.terminal.insert(tk.END, "- wake_up\n")
+                    self.terminal.insert(tk.END, "- disarm\n")
                     self.terminal.insert(tk.END, "- arm\n")
-                    # self.history.append(opt)
-                    # self.history_idx += 1
-                    # self.history_idx_back = self.history_idx
                 elif len(opt.strip().split(' ')) == 2:
                     st = opt.strip().split(' ')[1]
                     if st == "sleep":
@@ -206,41 +244,29 @@ class GUI():
                         self.terminal.insert(tk.END, "\n")
                         self.terminal.insert(tk.END, "Invalid state\n")
 
-                    # self.history.append(opt)
-                    # self.history_idx += 1
-                    # self.history_idx_back = self.history_idx
                 else:
                     self.terminal.insert(tk.END,"Syntax error\n")
             elif "set_reset" == opt:
-                # self.history.append(opt)
-                # self.history_idx += 1
-                # self.history_idx_back = self.history_idx
                 GS_Funcs.WriteData(MB_CMD.MB_INIT_CMD_RESET, 0)
-                self.terminal.insert(tk.END,"System resetting...\n")
-                self.terminal.insert(tk.END,"Checking for new status...\n")
+                self.terminal.insert(tk.END, "System resetting...\n")
+                self.terminal.insert(tk.END, "Checking for new status...\n")
                 GS_Funcs.set_timeout(GS_Funcs.TIMEOUT_RESET)
                 GS_Funcs.WriteData(MB_GET_STATUS, 0)
                 self.read_current_state()
                 if check != 0:
                     if state == GS_Funcs.MB_FSM.MB_INIT_STATE:
-                        self.terminal.insert(tk.END,"System reset success\n")
+                        self.terminal.insert(tk.END, "System reset success\n")
                     else:
-                        self.terminal.insert(tk.END,"System reset failed\n")
+                        self.terminal.insert(tk.END, "System reset failed\n")
                 else:
-                    self.terminal.insert(tk.END,"General Communication error\n")
+                    self.terminal.insert(tk.END, "General Communication error\n")
 
                 GS_Funcs.set_timeout(GS_Funcs.TIMEOUT_STD)
             elif "get_state" == opt:
-                # self.history.append(opt)
-                # self.history_idx += 1
-                # self.history_idx_back = self.history_idx
 
                 GS_Funcs.WriteData(MB_GET_STATUS, 0)
                 self.read_current_state()
             elif "get_errors" == opt:
-                # self.history.append(opt)
-                # self.history_idx += 1
-                # self.history_idx_back = self.history_idx
 
                 GS_Funcs.WriteData(MB_CMD.MB_INIT_CMD_GET_ERRORS, 0)
                 self.read_current_state()
@@ -248,36 +274,20 @@ class GUI():
                 if len(opt.strip().split(' ')) == 2:
                     if opt.strip().split(' ')[1].lower() == "on":
                         VERBOSE_ON = 1
-                        # self.history.append(opt)
-                        # self.history_idx += 1
-                        # self.history_idx_back = self.history_idx
                     elif opt.strip().split(' ')[1].lower() == "off":
                         VERBOSE_ON = 0
-                        # self.history.append(opt)
-                        # self.history_idx += 1
-                        # self.history_idx_back = self.history_idx
                     else:
                         self.print_help()
                 else:
                     self.print_help()
-            # elif "set_lat" in opt:
-            #     global lat
-            #     lat = float(opt.strip().split(' ')[1])
-            #     self.update_gui(self.window, self.canvas)
             elif "set_rx_cont" in opt:
                 if len(opt.strip().split(' ')) == 2:
                     if opt.strip().split(' ')[1].lower() == "on":
                         RX_CNT = 1
                         VERBOSE_ON = 1
-                        # self.history.append(opt)
-                        # self.history_idx += 1
-                        # self.history_idx_back = self.history_idx
                         self.read_current_state()
                     elif opt.strip().split(' ')[1].lower() == "off":
                         RX_CNT = 0
-                        # self.history.append(opt)
-                        # self.history_idx += 1
-                        # self.history_idx_back = self.history_idx
                     else:
                         self.print_help()
                 else:
@@ -291,13 +301,8 @@ class GUI():
 
         self.terminal.bind("<Up>", self.on_up_arrow)
         self.terminal.bind("<Down>", self.on_down_arrow)
-
-        # self.terminal.insert(tk.END, output_text)
-
         self.terminal.insert(tk.END, "> ")
-
         self.terminal.mark_set("insert", "end")
-        # Previene un ritorno a capo automatico
         return "break"
 
     def on_up_arrow(self, event):
@@ -338,8 +343,31 @@ class GUI():
             self.terminal.insert(tk.END, "Errors:\n", err_list)
 
     def read_current_state(self):
-        global state, err, lat, lon, alt, check
-        state, err, lat, lon, alt, check = GS_Funcs.ReadData()
+        global state, err, lat, lon, baro_alt, alt, check
+        state_tmp, err_tmp, lat_tmp, lon_tmp, alt_tmp, check_tmp = GS_Funcs.ReadData()
+        if lat_tmp is not None and lon_tmp is not None:
+            lat = lat_tmp[0]
+            lon = lon_tmp[0]
+            err = err_tmp
+
+            baro_alt = err * 3500.0 / 255.0
+            alt = alt_tmp
+            check = check_tmp
+            state = state_tmp
+
+            if self.cnt < 50:
+                self.cnt += 1
+                self.points_gps.append(Point(int(time.time()), alt))
+                self.points_gps.append(Point(int(time.time()), baro_alt))
+            else:
+                self.points_baro.pop(0)
+                self.points_gps.pop(0)
+                self.points_baro.append(Point(int(time.time()), alt))
+                self.points_baro.append(Point(int(time.time()), baro_alt))
+
+            obj = LogSample(state, lat, lon, baro_alt, alt, check)
+            serialize(obj, "log.pkl")
+
         if check == None:
             self.terminal.insert(tk.END, "Error while fetching state\n")
             return
@@ -354,13 +382,7 @@ class GUI():
             self.terminal.insert(tk.END, f"Altitude:{alt} m\n")
         if RX_CNT == 1:
             self.window.after(1, self.read_current_state)
+        self.update_gui(self.window, self.canvas)
 
     def choose_serial(self):
         return GS_Funcs.choose_Serial_term(self.terminal)
-
-    # def keep_focus(self):
-    #     self.root.focus_force()
-    #     self.root.after(1, self.keep_focus)
-
-
-

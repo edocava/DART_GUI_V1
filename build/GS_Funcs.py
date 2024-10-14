@@ -127,11 +127,8 @@ def ReadData():
 
     lat = struct.unpack('f', latb)
     lon = struct.unpack('f', lonb)
-    alt = struct.unpack('H', altb)
+    alt = struct.unpack('<H', altb)
     alt = alt[0] / 10
-    #state = struct.unpack('B',stateb)
-    #error = struct.unpack('B',errb)
-    #chk = struct.unpack('B',chkb)
 
     checksum = 0
     pckt = packet[0:12]
